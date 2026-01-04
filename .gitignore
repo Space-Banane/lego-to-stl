@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment
+.env
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+sets/*/           # Generated set conversions (keep structure, ignore contents)
+!sets/.gitkeep
+test_output/
+*.stl
+*.log
+
+# Keep the sets directory structure but not the contents
+sets/
+!sets/.gitkeep
+
+ldraw
+
+colors.csv
+parts.csv
+sets.csv

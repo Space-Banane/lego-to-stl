@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGO Set to STL Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Dark Mode Toggle -->
+        <div class="flex justify-end mb-4">
+            <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+                <span class="dark-mode-icon hidden dark:inline">🌙</span>
+                <span class="light-mode-icon inline dark:hidden">☀️</span>
+            </button>
+        </div>
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">🧱 LEGO Set to STL</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400">Convert LEGO sets to 3D-printable STL files</p>
+        </div>
+
+        <!-- Main Input Card -->
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Enter Set Number</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Enter a LEGO set number (e.g., 10245) to convert all parts to STL format</p>
+                
+                <form id="setForm" class="space-y-4">
+                    <div>
+                        <input 
+                            type="text" 
+                            id="setNumber" 
+                            placeholder="e.g., 10245"
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                            pattern="[0-9A-Za-z-]+"
+                            required
+                        >
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+                    >
+                        Convert to STL
+                    </button>
+                </form>
+
+                <!-- Status Messages -->
+                <div id="statusBox" class="mt-6 hidden">
+                    <div class="p-4 rounded-lg" id="statusContent">
+                        <!-- Status will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progressBox" class="mt-6 hidden">
+                    <div class="mb-2 flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="progressText">Processing...</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="progressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                        <div id="progressBar" class="bg-blue-600 dark:bg-blue-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processed Sets -->
+            <div id="setsListBox" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Previously Processed Sets</h2>
+                <div id="setsList" class="space-y-2">
+                    <p class="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const setForm = document.getElementById('setForm');
+        const setNumberInput = document.getElementById('setNumber');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusBox = document.getElementById('statusBox');
+        const statusContent = document.getElementById('statusContent');
+        const progressBox = document.getElementById('progressBox');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressPercent = document.getElementById('progressPercent');
+
+        // Load processed sets on page load
+        loadProcessedSets();
+
+        setForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const setNumber = setNumberInput.value.trim();
+
+            if (!setNumber) {
+                showStatus('error', 'Please enter a set number');
+                return;
+            }
+
+            // Disable form
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Validating...';
+            hideStatus();
+            hideProgress();
+
+            try {
+                // Step 1: Validate set
+                const validateResponse = await fetch(`/api/validate/${setNumber}`);
+                const validateData = await validateResponse.json();
+
+                if (!validateData.valid) {
+                    showStatus('error', validateData.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Convert to STL';
+                    return;
+                }
+
+                // If already exists, redirect
+                if (validateData.exists) {
+                    showStatus('info', validateData.message);
+                    setTimeout(() => {
+                        window.location.href = `/set/${setNumber}`;
+                    }, 1500);
+                    return;
+                }
+
+                // Step 2: Start processing
+                showStatus('info', 'Starting conversion...');
+                submitBtn.textContent = 'Processing...';
+
+                const processResponse = await fetch(`/api/process/${setNumber}`, {
+                    method: 'POST'
+                });
+                const processData = await processResponse.json();
+
+                if (!processData.success) {
+                    showStatus('error', processData.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Convert to STL';
+                    return;
+                }
+
+                // Step 3: Poll for status
+                hideStatus();
+                showProgress();
+                pollStatus(setNumber);
+
+            } catch (error) {
+                showStatus('error', 'An error occurred: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Convert to STL';
+            }
+        });
+
+        async function pollStatus(setNumber) {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${setNumber}`);
+                    const data = await response.json();
+
+                    // Update progress
+                    updateProgress(data.progress || 0, data.message || 'Processing...');
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        updateProgress(100, data.message);
+                        setTimeout(() => {
+                            window.location.href = `/set/${setNumber}`;
+                        }, 2000);
+                    } else if (data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        hideProgress();
+                        showStatus('error', data.message);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Convert to STL';
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    hideProgress();
+                    showStatus('error', 'Error checking status: ' + error.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Convert to STL';
+                }
+            }, 2000); // Poll every 2 seconds
+        }
+
+        function showStatus(type, message) {
+            statusBox.classList.remove('hidden');
+            statusContent.className = 'p-4 rounded-lg ';
+            
+            if (type === 'error') {
+                statusContent.className += 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-700';
+            } else if (type === 'success') {
+                statusContent.className += 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-700';
+            } else if (type === 'info') {
+                statusContent.className += 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-700';
+            }
+            
+            statusContent.textContent = message;
+        }
+
+        function hideStatus() {
+            statusBox.classList.add('hidden');
+        }
+
+        function showProgress() {
+            progressBox.classList.remove('hidden');
+        }
+
+        function hideProgress() {
+            progressBox.classList.add('hidden');
+        }
+
+        function updateProgress(percent, message) {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            progressText.textContent = message;
+        }
+
+        async function loadProcessedSets() {
+            try {
+                const response = await fetch('/api/sets');
+                const data = await response.json();
+                const setsList = document.getElementById('setsList');
+
+                if (data.sets.length === 0) {
+                    setsList.innerHTML = '<p class="text-gray-500">No sets processed yet</p>';
+                    return;
+                }
+
+                setsList.innerHTML = data.sets.map(set => `
+                    <a href="/set/${set.set_number}" class="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">${set.set_number}</span>
+                                <span class="text-gray-600 dark:text-gray-400"> - ${set.name}</span>
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                ${set.unique_parts} unique parts
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading sets:', error);
+                document.getElementById('setsList').innerHTML = '<p class="text-red-500">Error loading sets</p>';
+            }
+        }
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+        
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            html.classList.add('dark');
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const theme = html.classList.contains('dark') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+        });
+    </script>
+</body>
+</html>

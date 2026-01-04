@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ set_data.name }} - {{ set_data.set_number }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Dark Mode Toggle -->
+        <div class="flex justify-end mb-4">
+            <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+                <span class="dark-mode-icon hidden dark:inline">🌙</span>
+                <span class="light-mode-icon inline dark:hidden">☀️</span>
+            </button>
+        </div>
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="/" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-4 inline-block">← Back to Home</a>
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{ set_data.name }}</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400">Set {{ set_data.set_number }}</p>
+        </div>
+
+        <!-- Set Information Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Set Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">Released:</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ set_data.released }}</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">Theme:</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ set_data.theme }}</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">Total Parts:</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ set_data.total_parts }}</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">Unique Parts:</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ set_data.unique_parts }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download All Button -->
+        <div class="mb-8">
+            <a href="/download/{{ set_data.set_number }}/zip" 
+               class="inline-block bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
+                📦 Download All STLs (ZIP)
+            </a>
+        </div>
+
+        <!-- Parts List -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-100">Parts List</h2>
+            
+            <!-- Filter Controls -->
+            <div class="mb-6 flex gap-4">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search by part number..."
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <select id="colorFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Colors</option>
+                </select>
+            </div>
+
+            <!-- Parts Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full" id="partsTable">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Part</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Color</th>
+                            <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Qty</th>
+                            <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Spare</th>
+                            <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">STL</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for part in set_data.parts %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 part-row" data-part="{{ part.part_num }}" data-color="{{ part.color_name }}">
+                            <td class="px-4 py-3">
+                                <span class="font-mono text-sm text-gray-800 dark:text-gray-200">{{ part.part_num }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600" 
+                                         style="background-color: #{{ part.color_rgb }};"
+                                         title="{{ part.color_name }}"></div>
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ part.color_name }}</span>
+                                    {% if part.is_transparent %}
+                                    <span class="text-xs text-blue-600 dark:text-blue-400">(Trans)</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ part.quantity }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if part.is_spare %}
+                                <span class="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">Yes</span>
+                                {% else %}
+                                <span class="text-xs text-gray-400 dark:text-gray-500">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if part.stl_exists %}
+                                <a href="/download/{{ set_data.set_number }}/{{ part.part_num }}" 
+                                   class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold text-sm">
+                                    ⬇ Download
+                                </a>
+                                {% else %}
+                                <span class="text-red-500 dark:text-red-400 text-xs">Missing</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                Showing <span id="visibleCount">{{ set_data.parts|length }}</span> of {{ set_data.parts|length }} parts
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get unique colors for filter
+        const parts = {{ set_data.parts | tojson }};
+        const uniqueColors = [...new Set(parts.map(p => p.color_name))].sort();
+        
+        const colorFilter = document.getElementById('colorFilter');
+        uniqueColors.forEach(color => {
+            const option = document.createElement('option');
+            option.value = color;
+            option.textContent = color;
+            colorFilter.appendChild(option);
+        });
+
+        // Search and filter functionality
+        const searchInput = document.getElementById('searchInput');
+        const rows = document.querySelectorAll('.part-row');
+        const visibleCount = document.getElementById('visibleCount');
+
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedColor = colorFilter.value.toLowerCase();
+            let count = 0;
+
+            rows.forEach(row => {
+                const partNum = row.dataset.part.toLowerCase();
+                const color = row.dataset.color.toLowerCase();
+
+                const matchesSearch = partNum.includes(searchTerm);
+                const matchesColor = !selectedColor || color === selectedColor;
+
+                if (matchesSearch && matchesColor) {
+                    row.style.display = '';
+                    count++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            visibleCount.textContent = count;
+        }
+
+        searchInput.addEventListener('input', filterTable);
+        colorFilter.addEventListener('change', filterTable);
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+        
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            html.classList.add('dark');
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const theme = html.classList.contains('dark') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+        });
+    </script>
+</body>
+</html>

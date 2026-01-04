@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  lego-converter:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount sets directory to persist converted STL files
+      - ./sets:/app/sets
+      # Mount .env file if it exists (for API keys)
+      - ./.env:/app/.env:ro
+    environment:
+      # You can set environment variables here or use .env file
+      - FLASK_ENV=production
+      # Uncomment and set your Rebrickable API key if not using .env file
+      # - REBRICKABLE_API_KEY=your_api_key_here
+    restart: unless-stopped
