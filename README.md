@@ -10,12 +10,17 @@ git clone https://github.com/Space-Banane/lego-to-stl.git
 cd lego-to-stl
 ```
 
-1.2 Install ldraw
+1.2 Download LDraw
 ```bash
 wget https://library.ldraw.org/library/updates/complete.zip
 # This may take a while
 unzip complete.zip
 rm complete.zip
+```
+
+1.3 Download Ldraw2STL
+```bash
+git clone https://github.com/kristov/ldraw2stl.git
 ```
 
 1.3 Download Datasets
