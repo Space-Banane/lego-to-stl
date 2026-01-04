@@ -341,4 +341,5 @@ if __name__ == '__main__':
     print("\nStarting server at http://127.0.0.1:5000")
     print("Press Ctrl+C to stop\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # For local development only - use gunicorn in production
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)

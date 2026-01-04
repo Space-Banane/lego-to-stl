@@ -28,5 +28,6 @@ EXPOSE 5000
 ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 
-# Run the application
-CMD ["python", "app.py"]
+# Run the application with gunicorn
+# 4 workers, 300s timeout for long conversions, bind to 0.0.0.0:5000
+CMD ["gunicorn", "--workers=4", "--timeout=300", "--bind=0.0.0.0:5000", "app:app"]

@@ -11,8 +11,16 @@ services:
       # Mount .env file if it exists (for API keys)
       - ./.env:/app/.env:ro
     environment:
-      # You can set environment variables here or use .env file
+      # Production environment settings
       - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - WORKERS=4
       # Uncomment and set your Rebrickable API key if not using .env file
       # - REBRICKABLE_API_KEY=your_api_key_here
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
